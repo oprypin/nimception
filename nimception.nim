@@ -4,26 +4,26 @@ proc nimceptionTransform(input: string): string =
   var stack: seq[int] = @[]
   template top(): expr =
     if stack.len > 0: stack[stack.high]
-    else: 0
+    else: -1
   
   result = "proc nimceptionResult(): string ="
-  template echo(s: string): stmt =
+  template add(s: string): stmt =
     result.add "\n  " & repeat("  ", stack.len) & s
-  echo "result = \"\""
+  add """result = """""
   
   for line in input.splitLines():
     let leading = line.len - line.strip(trailing = false).len
-    while stack.len > 0 and leading <= top():
+    while leading <= top():
       discard stack.pop()
     if line.strip().startsWith("%"):
-      echo line.substr(leading+1)
-      if stack.len == 0 or leading >= top():
+      add line.substr(leading+1)
+      if leading >= top():
         stack.add leading
     else:
-      echo "result.add \"\\n" & line.substr(stack.len*2)
-        .replace("\\", "\\\\").replace("\"", "\\\"")
-        .replace("{{", "\"& $(").replace("}}", ") &\"") & "\""
-  echo "result = result.substr(1)"
+      add """result.add "\n$1"""".format(line.substr(stack.len*2)
+        .replace(r"\", r"\\").replace("\"", "\\\"")
+        .replace("{{", """"& $(""").replace("}}", """) &""""))
+  add "result = result.substr(1)"
 
 macro exec*(s: static[string]): stmt =
   result = parseStmt(s)
